@@ -1,0 +1,5 @@
+confluent-kafka
+groq
+elasticsearch==8.10.1
+pypdf
+requests
