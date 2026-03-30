@@ -1,0 +1,83 @@
+services:
+# -- CONTAINER KAFKA (KRaft) -- #
+  kafka:
+    image: apache/kafka:4.1.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"               # accesso dall'esterno (altri container)
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAKFA_LISTENER-SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CLUSTER_ID=67e3f8a0-7b5a-4e1a-8c3b-9e2d1f0a2b3c
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+
+
+
+# -- ELASTICSEARCH -- #
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+    - "9200:9200"
+
+
+# -- KIBANA -- #
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
+    ports:
+    - "5601:5601"
+    depends_on:
+    - elasticsearch
+
+
+# -- TELEGRAM (BOT) -- #
+  bot:
+    build: ./bot
+    image: thesis-coach-bot:1.0
+    container_name: telegram_bot
+    depends_on:
+    - kafka
+    volumes:
+    - ./data:/data
+    environment:
+    - KAFKA_BROKER=kafka:9092
+    - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+
+
+# -- SPARK -- #
+  spark:
+    build: ./spark
+    image: spark-processing:v1
+    container_name: spark_processing
+    depends_on:
+      - kafka
+      - elasticsearch
+    volumes:
+      - ./data:/data
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - PYTHONUNBUFFERED=1
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+    
+
+
+  
+
