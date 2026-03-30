@@ -78,7 +78,19 @@ services:
       - PYTHONUNBUFFERED=1
       - GROQ_API_KEY=${GROQ_API_KEY}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-    
+
+
+
+  kibana-init:
+    image: curlimages/curl:latest
+    container_name: kibana_init
+    depends_on:
+      - kibana
+    volumes:
+      - ./kibana/dashboards.ndjson:/dashboards.ndjson
+      - ./kibana/init_kibana.sh:/init_kibana.sh
+    entrypoint: ["/bin/sh", "/init_kibana.sh"]
+  
 
 
   
